@@ -19,15 +19,16 @@
     "80 10 02 00 00 FF 15 ?? ?? ?? 00 8B D8 48 8B 4C 24 40 48 8B 01 48 8B 40 10 FF 15 ?? ?? ?? 00 8B C3 48 8B 5C 24 "  \
     "60 48 8B 6C 24 68 48 8B 74 24 70 48 8B 7C 24 78 48 83 C4 50 41 5E C3"
 
+// from https://learn.microsoft.com/zh-cn/gaming/gdk/docs/reference/system/xstore/structs/xstoregamelicense
 struct XStoreGameLicense {
-    char     mA[18];
-    bool     mB;
-    bool     mC;
-    bool     mD;
-    bool     mE;
-    uint32_t mF;
-    char     mG[64];
-    int64_t  mH;
+    char     skuStoreId[18];
+    bool     isActive;
+    bool     isTrialOwnedByThisUser;
+    bool     isDiscLicense;
+    bool     isTrial;
+    uint32_t trialTimeRemainingInSeconds;
+    char     trialUniqueId[64];
+    time_t   expirationDate;
 };
 
 GLACIE_STATIC_HOOK(XStoreQueryGameLicenseAsyncHook, XStoreQueryGameLicenseAsync, uint32_t, void*, void* a2) {
@@ -45,14 +46,14 @@ GLACIE_STATIC_HOOK(
     void*,
     XStoreGameLicense& license
 ) {
-    std::copy_n("9P5X4QVLC2XR\0\0\0\0\0", sizeof(license.mA), license.mA);
-    license.mB = true;
-    license.mC = false;
-    license.mD = false;
-    license.mE = false;
-    license.mF = UINT_MAX;
-    std::fill_n(license.mG, sizeof(license.mG), 0);
-    license.mH = LLONG_MAX;
+    std::copy_n("9NBLGGH2JHXJ/0010", sizeof(license.skuStoreId), license.skuStoreId);
+    license.isActive                    = true;
+    license.isTrialOwnedByThisUser      = false;
+    license.isDiscLicense               = false;
+    license.isTrial                     = false;
+    license.trialTimeRemainingInSeconds = UINT_MAX;
+    std::fill_n(license.trialUniqueId, sizeof(license.trialUniqueId), 0);
+    license.expirationDate = LLONG_MAX;
     return 0;
 }
 
