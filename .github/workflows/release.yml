@@ -1,0 +1,72 @@
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build-windows:
+    name: Build
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+        
+    - name: Install xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      
+    - name: Build Plugin (Release)
+      run: xmake config --mode=release -y && xmake --all -y
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ github.event.repository.name }}-windows-x86_64
+        path: |
+          bin/
+
+  update-release-notes:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Release Notes
+        id: extract-release-notes
+        uses: ffurrer2/extract-release-notes@v2
+
+      - name: Update Release Notes
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ${{ steps.extract-release-notes.outputs.release_notes }}
+
+  upload-to-release:
+    name: Publish Release
+    needs:
+      - update-release-notes
+      - build-windows
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-windows-x86_64
+          path: artifact
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifact/**

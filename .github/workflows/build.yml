@@ -1,0 +1,30 @@
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+        
+    - name: Install xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      
+    - name: Build Plugin (Release)
+      run: xmake config --mode=release -y && xmake --all -y
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ github.event.repository.name }}-windows-x86_64-${{ github.sha }}
+        path: |
+          bin/
